@@ -6,7 +6,7 @@
 """
 
 import os
-
+import datetime
 class Config:
     """
     全局配置类
@@ -28,10 +28,11 @@ class Config:
 
     # 日志配置
     LOG_DIR = os.path.join(PROJECT_ROOT, "logs")
-    LOG_FILE_PATH = os.path.join(LOG_DIR, "app.log")
-    
+    # 按日期生成日志文件名
+    today = datetime.datetime.now().strftime("%Y%m%d")
+    LOG_FILE_PATH = os.path.join(LOG_DIR, f"agent_{today}.log")
+
     # 确保日志目录存在
     os.makedirs(LOG_DIR, exist_ok=True)
-
 # 创建全局配置实例
 config = Config()
