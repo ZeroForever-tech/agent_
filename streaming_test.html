@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSE流式输出测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .output-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            min-height: 200px;
+        }
+        .event-item {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .event-type {
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .event-data {
+            background-color: #e9ecef;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 5px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .processed_question { background-color: #d1ecf1; }
+        .courses_data { background-color: #f8d7da; }
+        .course_selected { background-color: #f8d7da; }
+        .reports_data { background-color: #fff3cd; }
+        .related_knowledge { background-color: #d4edda; }
+        .system_prompt_built { background-color: #f8d7da; }
+        .fallback_prompt_built { background-color: #f8d7da; }
+        .llm_call_start { background-color: #cce7ff; }
+        .answer_chunk {
+            background-color: #e7f3ff;
+            font-family: monospace;
+        }
+        .complete {
+            background-color: #d4edda;
+            font-weight: bold;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+        }
+        .controls button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SSE流式输出测试</h1>
+        
+        <div class="input-group">
+            <label for="question">输入问题:</label>
+            <textarea id="question" placeholder="请输入你要提问的数学问题...">什么是二次根式？</textarea>
+        </div>
+        
+        <div class="input-group">
+            <label for="endpoint">选择接口:</label>
+            <select id="endpoint">
+                <option value="/api/v1/math/sqrt/stream">二次根式 (/sqrt/stream)</option>
+                <option value="/api/v1/math/pythagorean/stream">勾股定理 (/pythagorean/stream)</option>
+                <option value="/api/v1/math/parallelogram/stream">平行四边形 (/parallelogram/stream)</option>
+                <option value="/api/v1/math/linear/stream">一次函数 (/linear/stream)</option>
+                <option value="/api/v1/math/data-analysis/stream">数据分析 (/data-analysis/stream)</option>
+            </select>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">开始测试</button>
+            <button id="clearBtn">清空输出</button>
+        </div>
+        
+        <div class="output-container">
+            <h3>流式输出:</h3>
+            <div id="output"></div>
+        </div>
+    </div>
+
+    <script>
+        const questionEl = document.getElementById('question');
+        const endpointEl = document.getElementById('endpoint');
+        const startBtn = document.getElementById('startBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const outputEl = document.getElementById('output');
+        
+        let eventSource = null;
+        
+        // 开始测试
+        startBtn.addEventListener('click', () => {
+            const question = questionEl.value.trim();
+            const endpoint = endpointEl.value;
+            
+            if (!question) {
+                alert('请输入问题');
+                return;
+            }
+            
+            // 清空之前的输出
+            outputEl.innerHTML = '';
+            
+            // 禁用按钮
+            startBtn.disabled = true;
+            startBtn.textContent = '测试中...';
+            
+            // 构造请求URL
+            const url = `http://localhost:8000${endpoint}`;
+            
+            // 创建POST请求体
+            const postData = JSON.stringify({
+                user_question: question
+            });
+            
+            // 使用fetch API发送POST请求并处理流式响应
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: postData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                // 处理流式响应
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let buffer = '';
+                
+                function readStream() {
+                    reader.read().then(({ done, value }) => {
+                        if (done) {
+                            // 流结束
+                            startBtn.disabled = false;
+                            startBtn.textContent = '开始测试';
+                            addEventItem('complete', '流式传输完成');
+                            return;
+                        }
+                        
+                        // 将接收到的数据添加到缓冲区
+                        buffer += decoder.decode(value, { stream: true });
+                        
+                        // 处理完整的行
+                        const lines = buffer.split('\n\n');
+                        buffer = lines.pop(); // 保留不完整的行在缓冲区中
+                        
+                        lines.forEach(line => {
+                            if (line.startsWith('data: ')) {
+                                try {
+                                    const jsonData = line.substring(6);
+                                    const eventData = JSON.parse(jsonData);
+                                    addEventItem(eventData.type, eventData.data);
+                                } catch (e) {
+                                    console.error('解析事件数据失败:', e);
+                                    addEventItem('error', `解析事件数据失败: ${line}`);
+                                }
+                            }
+                        });
+                        
+                        // 继续读取流
+                        readStream();
+                    }).catch(error => {
+                        console.error('读取流时出错:', error);
+                        startBtn.disabled = false;
+                        startBtn.textContent = '开始测试';
+                        addEventItem('error', `读取流时出错: ${error.message}`);
+                    });
+                }
+                
+                // 开始读取流
+                readStream();
+            })
+            .catch(error => {
+                console.error('请求失败:', error);
+                startBtn.disabled = false;
+                startBtn.textContent = '开始测试';
+                addEventItem('error', `请求失败: ${error.message}`);
+            });
+        });
+        
+        // 清空输出
+        clearBtn.addEventListener('click', () => {
+            outputEl.innerHTML = '';
+        });
+        
+        // 添加事件项到输出区域
+        function addEventItem(type, data) {
+            const eventItem = document.createElement('div');
+            eventItem.className = `event-item ${type}`;
+            
+            const typeEl = document.createElement('div');
+            typeEl.className = 'event-type';
+            typeEl.textContent = `[${type}]`;
+            
+            const dataEl = document.createElement('div');
+            dataEl.className = 'event-data';
+            
+            if (type === 'answer_chunk') {
+                // 对于回答块，我们逐步添加到同一个元素中以实现打字机效果
+                const existingAnswer = document.querySelector('.answer_chunk .event-data');
+                if (existingAnswer) {
+                    existingAnswer.textContent += data;
+                    return;
+                } else {
+                    dataEl.textContent = data;
+                }
+            } else {
+                // 对于其他类型，直接显示数据
+                if (typeof data === 'object') {
+                    dataEl.textContent = JSON.stringify(data, null, 2);
+                } else {
+                    dataEl.textContent = data;
+                }
+            }
+            
+            eventItem.appendChild(typeEl);
+            eventItem.appendChild(dataEl);
+            outputEl.appendChild(eventItem);
+            
+            // 滚动到底部
+            outputEl.scrollTop = outputEl.scrollHeight;
+        }
+    </script>
+</body>
+</html>
