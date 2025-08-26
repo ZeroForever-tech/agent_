@@ -16,9 +16,9 @@ class Config:
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # 大模型配置
-    LLM_MODEL = "qwen2.5-32b"
-    LLM_API_KEY = ""
-    LLM_API_URL = "http://106.227.68.83:8000/v1"
+    LLM_MODEL = "qwen-plus"
+    LLM_API_KEY = "sk-0a5ae6123741483cb6a8a1623fe7607f"
+    LLM_API_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
     # embedding外部api请求配置
     GET_IP_URL = "http://106.227.68.33:8849"
