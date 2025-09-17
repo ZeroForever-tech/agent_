@@ -17,7 +17,7 @@ class Config:
     
     # 大模型配置
     LLM_MODEL = "deepseek/Deepseek-70B"
-    LLM_API_KEY = ""
+    LLM_API_KEY = "ds2025test1fsetewrcc676klkja"
     LLM_API_URL = "http://106.225.187.17:8090/v1/"
 
     # embedding外部api请求配置

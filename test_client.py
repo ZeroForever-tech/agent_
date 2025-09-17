@@ -2,7 +2,7 @@ import requests
 import json
 
 # 定义请求URL
-url = "http://localhost:8000/api/v1/math/sqrt"
+url = "http://localhost:8848/api/v1/math/sqrt"
 
 # 定义请求头
 headers = {
