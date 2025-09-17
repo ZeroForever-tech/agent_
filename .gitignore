@@ -99,13 +99,13 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
+#.env
+#.venv
+#env/
+#venv/
+#ENV/
+#env.bak/
+#venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -137,7 +137,6 @@ Thumbs.db
 
 # Project specific
 logs/
-kb/vector_cache/
 
 prompt.txt
 

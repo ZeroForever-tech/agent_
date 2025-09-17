@@ -4,9 +4,11 @@
 全局配置
 管理MySQL地址/账号、embedding模型密钥、Qwen2.5-32B接口、0.6阈值等配置
 """
-
+from dotenv import load_dotenv
 import os
 import datetime
+
+load_dotenv()
 class Config:
     """
     全局配置类
@@ -16,12 +18,12 @@ class Config:
     PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # 大模型配置
-    LLM_MODEL = "deepseek/Deepseek-70B"
-    LLM_API_KEY = "ds2025test1fsetewrcc676klkja"
-    LLM_API_URL = "http://106.225.187.17:8090/v1/"
+    LLM_MODEL = os.getenv("LLM_MODEL", "")
+    LLM_API_KEY = os.getenv("LLM_API_KEY", "")
+    LLM_API_URL = os.getenv("LLM_API_URL", "")
 
     # embedding外部api请求配置
-    GET_IP_URL = "http://106.227.68.33:8849"
+    GET_IP_URL = os.getenv("GET_IP_URL", "")
 
     # 对话历史配置
     MAX_DIALOGUE_HISTORY = 3
